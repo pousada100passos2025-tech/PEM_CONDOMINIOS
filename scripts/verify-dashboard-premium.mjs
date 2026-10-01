@@ -9,7 +9,7 @@ const css=[
 
 const requiredMain=[
   'PEM_DASHBOARD_PREMIUM',
-  'Central de operação',
+  'CENTRAL DE OPERAÇÃO',
   'Reservas hoje',
   'Chamados abertos',
   'Manutenções pendentes',
