@@ -17,6 +17,16 @@ const requiredMain=[
   'Próximas reservas',
   'ATIVIDADE RECENTE',
   "import'./dashboard-premium.css';",
+  "const[quickAction,setQuickAction]=useState('');",
+  'const openFlow=id=>',
+  "openFlow('condominios')",
+  "openFlow('reservas')",
+  "openFlow('ocorrencias')",
+  "openFlow('moradores')",
+  "openFlow('financeiro')",
+  "initialOpen={quickAction==='condominios'}",
+  "initialOpen={quickAction==='moradores'}",
+  'initialOpen={quickAction===active}',
 ];
 const requiredCss=['premium-command-center','premium-kpi-grid','premium-ops-grid'];
 
@@ -26,9 +36,9 @@ const missing=[
 ];
 
 if(missing.length){
-  console.error('PEM Condomínios: dashboard premium incompleto');
+  console.error('PEM Condomínios: dashboard/fluxos incompletos');
   missing.forEach(item=>console.error(`- ${item}`));
   process.exit(1);
 }
 
-console.log('PEM Condomínios: dashboard premium verificado');
+console.log('PEM Condomínios: dashboard premium e fluxos verificados');
