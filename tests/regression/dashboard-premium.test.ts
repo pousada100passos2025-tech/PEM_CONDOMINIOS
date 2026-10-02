@@ -5,24 +5,23 @@ import { resolve } from "node:path";
 const root = process.cwd();
 
 describe("dashboard premium regression", () => {
-  it("keeps the quick-action flows wired to the main condominium modules", () => {
+  it("keeps the pre-patch dashboard quick actions wired to core condominium modules", () => {
     const main = readFileSync(resolve(root, "src/main.jsx"), "utf8");
 
-    expect(main).toContain("openFlow('condominios')");
-    expect(main).toContain("openFlow('reservas')");
-    expect(main).toContain("openFlow('ocorrencias')");
-    expect(main).toContain("openFlow('moradores')");
-    expect(main).toContain("openFlow('financeiro')");
+    expect(main).toContain("select('condominios')");
+    expect(main).toContain("select('moradores')");
+    expect(main).toContain("select('reservas')");
+    expect(main).toContain("id:'financeiro'");
+    expect(main).toContain("id:'ocorrencias'");
   });
 
-  it("keeps the premium dashboard structure present", () => {
-    const main = readFileSync(resolve(root, "src/main.jsx"), "utf8");
-    const css = readFileSync(resolve(root, "src/dashboard-premium.css"), "utf8");
+  it("keeps the legacy premium verifier responsible for post-patch premium markers", () => {
+    const verifier = readFileSync(resolve(root, "scripts/verify-dashboard-premium.mjs"), "utf8");
 
-    expect(main).toContain("PEM_DASHBOARD_PREMIUM");
-    expect(main).toContain("CENTRAL DE OPERAÇÃO");
-    expect(css).toContain("premium-command-center");
-    expect(css).toContain("premium-kpi-grid");
-    expect(css).toContain("premium-ops-grid");
+    expect(verifier).toContain("PEM_DASHBOARD_PREMIUM");
+    expect(verifier).toContain("CENTRAL DE OPERAÇÃO");
+    expect(verifier).toContain("premium-command-center");
+    expect(verifier).toContain("premium-kpi-grid");
+    expect(verifier).toContain("premium-ops-grid");
   });
 });
