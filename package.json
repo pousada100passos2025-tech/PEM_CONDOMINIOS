@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/patch-recovery.mjs && node scripts/patch-condo-foundation.mjs && node scripts/patch-condo-save.mjs && node scripts/patch-dashboard-premium.mjs && node scripts/patch-dashboard-actions.mjs && node scripts/verify-dashboard-premium.mjs && vite build",
+    "build": "node scripts/patch-recovery.mjs && node scripts/patch-condo-foundation.mjs && node scripts/patch-condo-save.mjs && node scripts/patch-condo-admin-modules.mjs && node scripts/patch-dashboard-premium.mjs && node scripts/patch-dashboard-actions.mjs && node scripts/verify-dashboard-premium.mjs && vite build",
     "test": "vitest run",
     "verify": "npm test && npm run build",
     "preview": "vite preview"

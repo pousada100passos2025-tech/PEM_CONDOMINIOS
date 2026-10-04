@@ -24,11 +24,19 @@ mustReplace(
   'navegação das ações rápidas',
 );
 
-mustReplace(
-  "</>:active==='condominios'?<CondominiosPage data={data}/>:active==='moradores'?<MoradoresPage data={data}/>:<OperationalPage id={active} data={data}/>}",
-  "</>:active==='condominios'?<CondominiosPage data={data} initialOpen={quickAction==='condominios'}/>:active==='moradores'?<MoradoresPage data={data} initialOpen={quickAction==='moradores'}/>:<OperationalPage id={active} data={data} initialOpen={quickAction===active}/>}",
-  'abertura automática dos formulários',
-);
+const legacyRoute="</>:active==='condominios'?<CondominiosPage data={data}/>:active==='moradores'?<MoradoresPage data={data}/>:<OperationalPage id={active} data={data}/>}";
+const extendedRoute="</>:active==='condominios'?<CondominiosPage data={data}/>:active==='moradores'?<MoradoresPage data={data}/>:active==='cadastros'?<CadastrosPage data={data}/>:active==='manutencao'?<ManutencaoPage data={data}/>:active==='configuracoes'?<ConfiguracoesPage data={data}/>:<OperationalPage id={active} data={data}/>}";
+const legacyTarget="</>:active==='condominios'?<CondominiosPage data={data} initialOpen={quickAction==='condominios'}/>:active==='moradores'?<MoradoresPage data={data} initialOpen={quickAction==='moradores'}/>:<OperationalPage id={active} data={data} initialOpen={quickAction===active}/>}";
+const extendedTarget="</>:active==='condominios'?<CondominiosPage data={data} initialOpen={quickAction==='condominios'}/>:active==='moradores'?<MoradoresPage data={data} initialOpen={quickAction==='moradores'}/>:active==='cadastros'?<CadastrosPage data={data}/>:active==='manutencao'?<ManutencaoPage data={data}/>:active==='configuracoes'?<ConfiguracoesPage data={data}/>:<OperationalPage id={active} data={data} initialOpen={quickAction===active}/>}";
+
+if(!source.includes(legacyTarget)&&!source.includes(extendedTarget)){
+  if(source.includes(extendedRoute)) source=source.replace(extendedRoute,extendedTarget);
+  else if(source.includes(legacyRoute)) source=source.replace(legacyRoute,legacyTarget);
+  else{
+    console.error('PEM Condomínios: não foi possível aplicar abertura automática dos formulários');
+    process.exit(1);
+  }
+}
 
 mustReplace(
   "function CondominiosPage({data}){\n  const[showForm,setShowForm]=useState(data.condos.length===0);",
