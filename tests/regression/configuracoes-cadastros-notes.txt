@@ -1,0 +1,1 @@
+Regression intent: Configurações and Cadastros must remain present; condominium edits persist via Supabase; suppliers persist through prestadores_servicos; public Compras link is intentionally out of scope.
