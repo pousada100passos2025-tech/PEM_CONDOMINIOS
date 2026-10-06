@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useMemo,useState}from'react';
 import{createRoot}from'react-dom/client';
 import{createClient}from'@supabase/supabase-js';
-import{Mail,Lock,ArrowRight,Eye,EyeOff,LogOut,LayoutDashboard,Building2,Users,Wallet,CreditCard,MessageSquare,TriangleAlert,FileText,CalendarDays,Menu,X,Plus,ChevronRight,KeyRound,UserPlus,Phone,Home,Save,Search,MapPin,Car,Dog,UserRound,RefreshCw}from'lucide-react';
+import{Mail,Lock,ArrowRight,Eye,EyeOff,LogOut,LayoutDashboard,Building2,Users,Wallet,CreditCard,MessageSquare,TriangleAlert,FileText,CalendarDays,Menu,X,Plus,ChevronRight,KeyRound,UserPlus,Phone,Home,Save,Search,MapPin,Car,Dog,UserRound,RefreshCw,Settings,ExternalLink,Copy}from'lucide-react';
 import'./style.css';
 import'./app.css';
 
@@ -20,6 +20,8 @@ const modules=[
   {id:'ocorrencias',label:'Ocorrências',icon:TriangleAlert},
   {id:'documentos',label:'Documentos',icon:FileText},
   {id:'reservas',label:'Reservas',icon:CalendarDays},
+  {id:'central',label:'Central do Morador',icon:Home},
+  {id:'configuracoes',label:'Configurações',icon:Settings},
 ];
 
 const moduleCopy={
@@ -115,7 +117,7 @@ function Dashboard({session,onLogout,busy}){
           <section className="hero-panel"><div><span>PAINEL ADMINISTRATIVO</span><h2>Bem-vindo ao PEM Condomínios</h2><p>Cadastre o condomínio, organize unidades e moradores e mantenha reservas, cobranças, ocorrências e comunicação no mesmo lugar.</p></div><button onClick={()=>select('condominios')}><Plus size={18}/>Cadastrar condomínio</button></section>
           <section className="metric-grid">{cards.map(([title,value,caption,Icon,target])=><button className="metric-card" key={title} onClick={()=>select(target)}><div className="metric-icon"><Icon size={22}/></div><span>{title}</span><strong>{data.loading?'…':value}</strong><small>{caption}</small><ChevronRight size={18} className="metric-arrow"/></button>)}</section>
           <section className="dashboard-grid"><div className="panel"><div className="panel-title"><div><span>ATALHOS</span><h3>Comece por aqui</h3></div></div><div className="quick-grid"><button onClick={()=>select('condominios')}><Building2 size={22}/><div><strong>Novo condomínio</strong><span>Nome, CNPJ, endereço e responsável</span></div></button><button onClick={()=>select('moradores')}><Users size={22}/><div><strong>Unidade e morador</strong><span>Bloco, apartamento, proprietário ou inquilino</span></div></button><button onClick={()=>select('reservas')}><CalendarDays size={22}/><div><strong>Reserva</strong><span>Salão, churrasqueira e áreas comuns</span></div></button><button onClick={()=>select('cobrancas')}><CreditCard size={22}/><div><strong>Cobrança</strong><span>Taxas e vencimentos por unidade</span></div></button></div></div><div className="panel status-panel"><div className="panel-title"><div><span>SISTEMA</span><h3>Status da operação</h3></div></div><div className="status-row"><span className="status-dot"/><div><strong>Banco conectado</strong><small>Cadastros com persistência no Supabase</small></div></div><div className="status-row"><span className="status-dot"/><div><strong>Módulos ligados</strong><small>Condomínios, unidades, moradores e operação</small></div></div></div></section>
-        </>:active==='condominios'?<CondominiosPage data={data}/>:active==='moradores'?<MoradoresPage data={data}/>:<OperationalPage id={active} data={data}/>} 
+        </>:active==='condominios'?<CondominiosPage data={data}/>:active==='moradores'?<MoradoresPage data={data}/>:active==='central'?<CentralMoradorPage data={data}/>:active==='configuracoes'?<ConfiguracoesPage data={data}/>:<OperationalPage id={active} data={data}/>} 
       </div>
     </section>
   </main>;
@@ -247,8 +249,7 @@ function OperationalPage({id,data}){
   if(id==='reservas')return <ReservasPage data={data}/>;
   const cfg={
     financeiro:{icon:Wallet,action:'Lançar movimentação',table:'movimentacoes_financeiras'},
-    cobrancas:{icon:CreditCard,action:'Criar cobrança',table:'cobrancas'},
-    comunicados:{icon:MessageSquare,action:'Novo comunicado',table:'comunicados'},
+    cobrancas:{icon:CreditCard,action:'Criar cobrança',table:'cobrancas'},    comunicados:{icon:MessageSquare,action:'Novo comunicado',table:'comunicados'},
     ocorrencias:{icon:TriangleAlert,action:'Nova ocorrência',table:'chamados'},
     documentos:{icon:FileText,action:'Adicionar documento',table:'documentos'},
   }[id];
@@ -338,6 +339,65 @@ function ReservasPage({data}){
   </section>
 }
 
+
+function CentralMoradorPage({data}){
+  const[condominioId,setCondominioId]=useState('');
+  useEffect(()=>{if(!condominioId&&data.condos[0])setCondominioId(data.condos[0].id)},[data.condos,condominioId]);
+  const condo=data.condos.find(c=>c.id===condominioId);
+  const portalUrl=condo?.portal_public_token?`${window.location.origin}/?portal=${condo.portal_public_token}`:'';
+  async function copyLink(){if(portalUrl)await navigator.clipboard.writeText(portalUrl)}
+  return <section className="module-page">
+    <PageHead icon={Home} title="Central do Morador" description="Portal externo para reservas, comunicados e solicitações do morador ou inquilino."/>
+    {!data.condos.length?<Empty icon={Building2} title="Cadastre um condomínio primeiro" text="O portal público é criado por condomínio."/>:<div className="panel data-form">
+      <div className="form-grid"><Field label="Condomínio"><Select value={condominioId} onChange={e=>setCondominioId(e.target.value)}>{data.condos.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</Select></Field>
+      <Field label="Status"><Input readOnly value={condo?.portal_ativo===false?'Desativado':'Ativo'}/></Field>
+      <Field label="Link público" wide><div style={{display:'flex',gap:10}}><Input readOnly value={portalUrl||'Token do portal ainda não disponível'}/><Button type="button" secondary onClick={copyLink} disabled={!portalUrl}><Copy size={18}/>Copiar</Button>{portalUrl&&<Button type="button" onClick={()=>window.open(portalUrl,'_blank')}><ExternalLink size={18}/>Abrir portal</Button>}</div></Field></div>
+      <div className="form-footer"><span className="form-msg">As reservas feitas pelo portal entram como pendentes para aprovação no painel administrativo.</span></div>
+    </div>}
+  </section>
+}
+
+function ConfiguracoesPage({data}){
+  const[condominioId,setCondominioId]=useState('');
+  const[form,setForm]=useState({nome:'',cnpj:'',email:'',telefone:'',logo_url:'',cep:'',logradouro:'',numero:'',bairro:'',cidade:'',estado:'PE'});
+  const[msg,setMsg]=useState(''); const[saving,setSaving]=useState(false);
+  useEffect(()=>{if(!condominioId&&data.condos[0])setCondominioId(data.condos[0].id)},[data.condos,condominioId]);
+  useEffect(()=>{const c=data.condos.find(x=>x.id===condominioId);if(c)setForm({nome:c.nome||'',cnpj:c.cnpj||'',email:c.email||'',telefone:c.telefone||'',logo_url:c.logo_url||'',cep:c.cep||'',logradouro:c.logradouro||'',numero:c.numero||'',bairro:c.bairro||'',cidade:c.cidade||'',estado:c.estado||'PE'})},[condominioId,data.condos]);
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  async function save(e){e.preventDefault();setSaving(true);setMsg('');try{const{error}=await supabase.from('condominios').update({...form,estado:form.estado.toUpperCase()}).eq('id',condominioId);if(error)throw error;setMsg('Configurações salvas com sucesso.');await data.refresh()}catch(err){setMsg(err.message||'Não foi possível salvar.')}finally{setSaving(false)}}
+  return <section className="module-page">
+    <PageHead icon={Settings} title="Configurações" description="Identidade, dados de contato e endereço exibidos na operação do condomínio."/>
+    {!data.condos.length?<Empty icon={Building2} title="Nenhum condomínio cadastrado" text="Cadastre um condomínio antes de configurar a identidade."/>:<form className="data-form panel" onSubmit={save}>
+      <div className="form-grid"><Field label="Condomínio"><Select value={condominioId} onChange={e=>setCondominioId(e.target.value)}>{data.condos.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</Select></Field>
+      <Field label="Nome / razão de exibição"><Input value={form.nome} onChange={e=>set('nome',e.target.value)} required/></Field>
+      <Field label="CNPJ"><Input value={form.cnpj} onChange={e=>set('cnpj',e.target.value)}/></Field><Field label="E-mail"><Input type="email" value={form.email} onChange={e=>set('email',e.target.value)}/></Field>
+      <Field label="Telefone"><Input value={form.telefone} onChange={e=>set('telefone',e.target.value)}/></Field><Field label="URL da logomarca"><Input value={form.logo_url} onChange={e=>set('logo_url',e.target.value)} placeholder="https://..."/></Field>
+      <Field label="CEP"><Input value={form.cep} onChange={e=>set('cep',e.target.value)}/></Field><Field label="Logradouro"><Input value={form.logradouro} onChange={e=>set('logradouro',e.target.value)}/></Field>
+      <Field label="Número"><Input value={form.numero} onChange={e=>set('numero',e.target.value)}/></Field><Field label="Bairro"><Input value={form.bairro} onChange={e=>set('bairro',e.target.value)}/></Field>
+      <Field label="Cidade"><Input value={form.cidade} onChange={e=>set('cidade',e.target.value)}/></Field><Field label="UF"><Input maxLength="2" value={form.estado} onChange={e=>set('estado',e.target.value)}/></Field></div>
+      <div className="form-footer">{msg&&<span className="form-msg">{msg}</span>}<Button type="submit" disabled={saving}><Save size={18}/>{saving?'Salvando...':'Salvar configurações'}</Button></div>
+    </form>}
+  </section>
+}
+
+function PortalMorador({token}){
+  const[loading,setLoading]=useState(true),[payload,setPayload]=useState(null),[msg,setMsg]=useState('');
+  const[form,setForm]=useState({area:'',unidade:'',nome:'',email:'',inicio:'',fim:'',observacoes:''});
+  useEffect(()=>{(async()=>{const{data,error}=await supabase.rpc('portal_condominio_dados',{p_token:token});setPayload(data);setMsg(error?.message||data?.erro||'');setLoading(false)})()},[token]);
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  async function reservar(e){e.preventDefault();setMsg('');const{data,error}=await supabase.rpc('portal_criar_reserva',{p_token:token,p_area_comum_id:form.area,p_unidade_id:form.unidade||null,p_nome:form.nome,p_email:form.email,p_inicio:new Date(form.inicio).toISOString(),p_fim:new Date(form.fim).toISOString(),p_observacoes:form.observacoes||null});setMsg(error?.message||data?.mensagem||data?.erro||'Solicitação enviada.');}
+  if(loading)return <main className="loading-page">Carregando central do morador...</main>;
+  if(!payload?.ok)return <main className="page"><section className="card"><h2>Central indisponível</h2><p>{msg||'Este link não está ativo.'}</p></section></main>;
+  const c=payload.condominio,areas=payload.areas||[],units=payload.unidades||[],notices=payload.comunicados||[];
+  return <main className="page"><section className="card" style={{maxWidth:760}}>{c.logo_url&&<img src={c.logo_url} alt={c.nome} style={{maxHeight:90,maxWidth:220,objectFit:'contain'}}/>}<div className="intro"><span>CENTRAL DO MORADOR</span><h2>{c.nome}</h2><p>{[c.cidade,c.estado].filter(Boolean).join(' / ')}</p></div>
+    <form onSubmit={reservar}><h3>Solicitar reserva</h3><label>Área comum<div className="field"><CalendarDays size={18}/><select value={form.area} onChange={e=>set('area',e.target.value)} required><option value="">Selecione</option>{areas.map(a=><option key={a.id} value={a.id}>{a.nome}</option>)}</select></div></label>
+    <label>Unidade<div className="field"><Home size={18}/><select value={form.unidade} onChange={e=>set('unidade',e.target.value)}><option value="">Selecione</option>{units.map(u=><option key={u.id} value={u.id}>{u.identificacao}</option>)}</select></div></label>
+    <label>Nome<div className="field"><UserRound size={18}/><input value={form.nome} onChange={e=>set('nome',e.target.value)} required/></div></label><label>E-mail<div className="field"><Mail size={18}/><input type="email" value={form.email} onChange={e=>set('email',e.target.value)} required/></div></label>
+    <label>Início<div className="field"><CalendarDays size={18}/><input type="datetime-local" value={form.inicio} onChange={e=>set('inicio',e.target.value)} required/></div></label><label>Fim<div className="field"><CalendarDays size={18}/><input type="datetime-local" value={form.fim} onChange={e=>set('fim',e.target.value)} required/></div></label>
+    <label>Observações<div className="field"><MessageSquare size={18}/><input value={form.observacoes} onChange={e=>set('observacoes',e.target.value)}/></div></label><button type="submit">Enviar reserva<ArrowRight size={18}/></button>{msg&&<div className="msg">{msg}</div>}</form>
+    {notices.length>0&&<div style={{marginTop:28}}><h3>Comunicados</h3>{notices.map(n=><article className="record-card" key={n.id}><div><strong>{n.titulo}</strong><p>{n.mensagem}</p></div></article>)}</div>}</section></main>
+}
+
 function AuthScreen({forcePasswordReset=false,onPasswordUpdated}){
   const[mode,setMode]=useState(forcePasswordReset?'update':'login');
   const[email,setEmail]=useState('');
@@ -419,6 +479,7 @@ function AuthScreen({forcePasswordReset=false,onPasswordUpdated}){
 }
 
 function App(){
+  const portalToken=new URLSearchParams(window.location.search).get('portal');
   const[session,setSession]=useState(null);
   const[loadingSession,setLoadingSession]=useState(true);
   const[busy,setBusy]=useState(false);
@@ -454,6 +515,7 @@ function App(){
     window.history.replaceState({},'',window.location.pathname);
   }
 
+  if(portalToken)return <PortalMorador token={portalToken}/>;
   if(loadingSession)return <main className="loading-page">Carregando...</main>;
   if(recovering)return <AuthScreen forcePasswordReset onPasswordUpdated={finishPasswordRecovery}/>;
   return session?<Dashboard session={session} onLogout={logout} busy={busy}/>:<AuthScreen/>;
