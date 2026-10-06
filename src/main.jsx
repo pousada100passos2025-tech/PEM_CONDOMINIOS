@@ -88,6 +88,7 @@ function useWorkspaceData(){
 function Dashboard({session,onLogout,busy}){
   const[active,setActive]=useState('dashboard');
   const[menuOpen,setMenuOpen]=useState(false);
+  const[quickAction,setQuickAction]=useState('');
   const data=useWorkspaceData();
   const userName=session.user?.user_metadata?.nome||session.user?.email?.split('@')[0]||'Administrador';
   const current=modules.find(item=>item.id===active);
@@ -100,7 +101,8 @@ function Dashboard({session,onLogout,busy}){
     ['Saldo lançado',balance.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),'Receitas menos despesas',Wallet,'financeiro'],
     ['Cobranças abertas',String(pendingCharges),pendingCharges?'Acompanhe os vencimentos':'Nenhuma pendência',TriangleAlert,'cobrancas'],
   ];
-  const select=id=>{setActive(id);setMenuOpen(false)};
+  const select=id=>{setQuickAction('');setActive(id);setMenuOpen(false)};
+  const openFlow=id=>{setQuickAction(id);setActive(id);setMenuOpen(false)};
   return <main className="app-shell">
     <aside className={`sidebar ${menuOpen?'open':''}`}>
       <div className="side-brand"><img src="/pem-condominios-logo.jpg" alt="PEM Condomínios"/><div><strong>PEM</strong><span>Condomínios</span></div><button className="side-close" onClick={()=>setMenuOpen(false)}><X size={20}/></button></div>
@@ -114,10 +116,10 @@ function Dashboard({session,onLogout,busy}){
       <div className="workspace-body">
         {data.error&&<div className="system-error">{/jwt|token|expired|future/i.test(data.error)?'Sua sessão precisa ser renovada. Atualize a página; se continuar, saia e entre novamente.':'Não foi possível carregar alguns dados agora. Atualize a página e tente novamente.'}</div>}
         {active==='dashboard'?<>
-          <section className="hero-panel"><div><span>PAINEL ADMINISTRATIVO</span><h2>Bem-vindo ao PEM Condomínios</h2><p>Cadastre o condomínio, organize unidades e moradores e mantenha reservas, cobranças, ocorrências e comunicação no mesmo lugar.</p></div><button onClick={()=>select('condominios')}><Plus size={18}/>Cadastrar condomínio</button></section>
+          <section className="hero-panel"><div><span>PAINEL ADMINISTRATIVO</span><h2>Bem-vindo ao PEM Condomínios</h2><p>Cadastre o condomínio, organize unidades e moradores e mantenha reservas, cobranças, ocorrências e comunicação no mesmo lugar.</p></div><button onClick={()=>openFlow('condominios')}><Plus size={18}/>Cadastrar condomínio</button></section>
           <section className="metric-grid">{cards.map(([title,value,caption,Icon,target])=><button className="metric-card" key={title} onClick={()=>select(target)}><div className="metric-icon"><Icon size={22}/></div><span>{title}</span><strong>{data.loading?'…':value}</strong><small>{caption}</small><ChevronRight size={18} className="metric-arrow"/></button>)}</section>
-          <section className="dashboard-grid"><div className="panel"><div className="panel-title"><div><span>ATALHOS</span><h3>Comece por aqui</h3></div></div><div className="quick-grid"><button onClick={()=>select('condominios')}><Building2 size={22}/><div><strong>Novo condomínio</strong><span>Nome, CNPJ, endereço e responsável</span></div></button><button onClick={()=>select('moradores')}><Users size={22}/><div><strong>Unidade e morador</strong><span>Bloco, apartamento, proprietário ou inquilino</span></div></button><button onClick={()=>select('reservas')}><CalendarDays size={22}/><div><strong>Reserva</strong><span>Salão, churrasqueira e áreas comuns</span></div></button><button onClick={()=>select('cobrancas')}><CreditCard size={22}/><div><strong>Cobrança</strong><span>Taxas e vencimentos por unidade</span></div></button></div></div><div className="panel status-panel"><div className="panel-title"><div><span>SISTEMA</span><h3>Status da operação</h3></div></div><div className="status-row"><span className="status-dot"/><div><strong>Banco conectado</strong><small>Cadastros com persistência no Supabase</small></div></div><div className="status-row"><span className="status-dot"/><div><strong>Módulos ligados</strong><small>Condomínios, unidades, moradores e operação</small></div></div></div></section>
-        </>:active==='condominios'?<CondominiosPage data={data}/>:active==='moradores'?<MoradoresPage data={data}/>:active==='central'?<CentralMoradorPage data={data}/>:active==='configuracoes'?<ConfiguracoesPage data={data}/>:<OperationalPage id={active} data={data}/>} 
+          <section className="dashboard-grid"><div className="panel"><div className="panel-title"><div><span>ATALHOS</span><h3>Comece por aqui</h3></div></div><div className="quick-grid"><button onClick={()=>openFlow('condominios')}><Building2 size={22}/><div><strong>Novo condomínio</strong><span>Nome, CNPJ, endereço e responsável</span></div></button><button onClick={()=>openFlow('moradores')}><Users size={22}/><div><strong>Unidade e morador</strong><span>Bloco, apartamento, proprietário ou inquilino</span></div></button><button onClick={()=>openFlow('reservas')}><CalendarDays size={22}/><div><strong>Reserva</strong><span>Salão, churrasqueira e áreas comuns</span></div></button><button onClick={()=>openFlow('cobrancas')}><CreditCard size={22}/><div><strong>Cobrança</strong><span>Taxas e vencimentos por unidade</span></div></button></div></div><div className="panel status-panel"><div className="panel-title"><div><span>SISTEMA</span><h3>Status da operação</h3></div></div><div className="status-row"><span className="status-dot"/><div><strong>Banco conectado</strong><small>Cadastros com persistência no Supabase</small></div></div><div className="status-row"><span className="status-dot"/><div><strong>Módulos ligados</strong><small>Condomínios, unidades, moradores e operação</small></div></div></div></section>
+        </>:active==='condominios'?<CondominiosPage data={data} initialOpen={quickAction==='condominios'}/>:active==='moradores'?<MoradoresPage data={data} initialOpen={quickAction==='moradores'}/>:active==='central'?<CentralMoradorPage data={data}/>:active==='configuracoes'?<ConfiguracoesPage data={data}/>:<OperationalPage id={active} data={data} initialOpen={quickAction===active}/>} 
       </div>
     </section>
   </main>;
@@ -127,8 +129,8 @@ function PageHead({icon:Icon,title,description,action,onAction}){
   return <section className="module-head"><div className="module-icon"><Icon size={28}/></div><div className="grow"><span>MÓDULO</span><h2>{title}</h2><p>{description}</p></div>{action&&<Button onClick={onAction}><Plus size={18}/>{action}</Button>}</section>
 }
 
-function CondominiosPage({data}){
-  const[showForm,setShowForm]=useState(data.condos.length===0);
+function CondominiosPage({data,initialOpen=false}){
+  const[showForm,setShowForm]=useState(initialOpen||data.condos.length===0);
   const[msg,setMsg]=useState('');
   const[saving,setSaving]=useState(false);
   const[form,setForm]=useState({nome:'',cnpj:'',tipo:'residencial',email:'',telefone:'',cep:'',logradouro:'',numero:'',bairro:'',cidade:'',estado:'PE',quantidade_unidades:'',observacoes:'',responsavel_nome:'',responsavel_papel:'sindico',responsavel_email:'',responsavel_telefone:''});
@@ -178,8 +180,8 @@ function CondominiosPage({data}){
   </section>
 }
 
-function MoradoresPage({data}){
-  const[showForm,setShowForm]=useState(data.units.length===0);
+function MoradoresPage({data,initialOpen=false}){
+  const[showForm,setShowForm]=useState(initialOpen||data.units.length===0);
   const[msg,setMsg]=useState('');
   const[saving,setSaving]=useState(false);
   const[form,setForm]=useState({condominio_id:'',bloco:'',identificacao:'',tipo:'apartamento',morador_nome:'',vinculo:'proprietario',morador_email:'',morador_telefone:'',reside:true,veiculo_placa:'',veiculo_modelo:'',pet_nome:'',pet_especie:'cachorro'});
@@ -245,8 +247,8 @@ function MoradoresPage({data}){
   </section>
 }
 
-function OperationalPage({id,data}){
-  if(id==='reservas')return <ReservasPage data={data}/>;
+function OperationalPage({id,data,initialOpen=false}){
+  if(id==='reservas')return <ReservasPage data={data} initialOpen={initialOpen}/>;
   const cfg={
     financeiro:{icon:Wallet,action:'Lançar movimentação',table:'movimentacoes_financeiras'},
     cobrancas:{icon:CreditCard,action:'Criar cobrança',table:'cobrancas'},    comunicados:{icon:MessageSquare,action:'Novo comunicado',table:'comunicados'},
@@ -254,11 +256,11 @@ function OperationalPage({id,data}){
     documentos:{icon:FileText,action:'Adicionar documento',table:'documentos'},
   }[id];
   const records={financeiro:data.finance,cobrancas:data.charges,comunicados:data.notices,ocorrencias:data.issues,documentos:data.docs}[id]||[];
-  return <SimpleOperational id={id} cfg={cfg} copy={moduleCopy[id]} records={records} data={data}/>;
+  return <SimpleOperational id={id} cfg={cfg} copy={moduleCopy[id]} records={records} data={data} initialOpen={initialOpen}/>;
 }
 
-function SimpleOperational({id,cfg,copy,records,data}){
-  const[showForm,setShowForm]=useState(false);
+function SimpleOperational({id,cfg,copy,records,data,initialOpen=false}){
+  const[showForm,setShowForm]=useState(initialOpen);
   const[msg,setMsg]=useState('');
   const[saving,setSaving]=useState(false);
   const base={condominio_id:'',descricao:'',titulo:'',categoria:'geral',tipo:'receita',valor:'',competencia:'',vencimento:'',status:'pendente',mensagem:'',prioridade:'normal',arquivo_url:'',observacoes:'',unidade_id:''};
@@ -297,8 +299,8 @@ function SimpleOperational({id,cfg,copy,records,data}){
   </section>
 }
 
-function ReservasPage({data}){
-  const[showForm,setShowForm]=useState(false);
+function ReservasPage({data,initialOpen=false}){
+  const[showForm,setShowForm]=useState(initialOpen);
   const[msg,setMsg]=useState('');
   const[saving,setSaving]=useState(false);
   const[form,setForm]=useState({condominio_id:'',area_nome:'',unidade_id:'',responsavel_nome:'',inicio_em:'',fim_em:'',observacoes:''});
