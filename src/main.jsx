@@ -441,7 +441,9 @@ function App(){
     setBusy(false);
   }
 
-  function finishPasswordRecovery(){
+  async function finishPasswordRecovery(){
+    if(supabase)await supabase.auth.signOut();
+    setSession(null);
     setRecovering(false);
     window.history.replaceState({},'',window.location.pathname);
   }
