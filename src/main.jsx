@@ -338,43 +338,116 @@ function ReservasPage({data}){
   </section>
 }
 
-function AuthScreen(){
-  const[mode,setMode]=useState('login');
+function AuthScreen({forcePasswordReset=false,onPasswordUpdated}){
+  const[mode,setMode]=useState(forcePasswordReset?'update':'login');
   const[email,setEmail]=useState('');
   const[password,setPassword]=useState('');
+  const[confirmPassword,setConfirmPassword]=useState('');
   const[showPassword,setShowPassword]=useState(false);
   const[name,setName]=useState('');
   const[phone,setPhone]=useState('');
   const[condominio,setCondominio]=useState('');
   const[msg,setMsg]=useState('');
   const[busy,setBusy]=useState(false);
-  const title=mode==='login'?'Bem-vindo':mode==='signup'?'Criar conta':'Recuperar senha';
-  const description=mode==='login'?'Administração organizada, informação clara e controle em um só lugar.':mode==='signup'?'Preencha seus dados para iniciar o acesso ao PEM Condomínios.':'Informe seu e-mail e enviaremos o link para criar uma nova senha.';
+
+  useEffect(()=>{
+    if(forcePasswordReset){
+      setMode('update');
+      setMsg('');
+      setPassword('');
+      setConfirmPassword('');
+    }
+  },[forcePasswordReset]);
+
+  const title=mode==='login'?'Bem-vindo':mode==='signup'?'Criar conta':mode==='forgot'?'Recuperar senha':'Criar nova senha';
+  const description=mode==='login'
+    ?'Administração organizada, informação clara e controle em um só lugar.'
+    :mode==='signup'
+      ?'Preencha seus dados para iniciar o acesso ao PEM Condomínios.'
+      :mode==='forgot'
+        ?'Informe seu e-mail e enviaremos um link seguro para criar uma nova senha.'
+        :'Digite e confirme sua nova senha para concluir a recuperação do acesso.';
+
   async function submit(e){
-    e.preventDefault();if(!supabase){setMsg('Configuração do banco não encontrada.');return}
+    e.preventDefault();
+    if(!supabase){setMsg('Configuração do banco não encontrada.');return}
     setBusy(true);setMsg('');
-    if(mode==='login'){const{error}=await supabase.auth.signInWithPassword({email,password});setMsg(error?'Não foi possível entrar. Verifique o e-mail e a senha.':'')}
-    else if(mode==='signup'){const{error}=await supabase.auth.signUp({email,password,options:{data:{nome:name,telefone:phone,condominio}}});setMsg(error?error.message:'Cadastro enviado. Confira seu e-mail para confirmar a conta.')}
-    else{const{error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});setMsg(error?error.message:'Link de recuperação enviado. Confira seu e-mail.')}
-    setBusy(false);
+    try{
+      if(mode==='login'){
+        const{error}=await supabase.auth.signInWithPassword({email,password});
+        setMsg(error?'Não foi possível entrar. Verifique o e-mail e a senha.':'');
+      }else if(mode==='signup'){
+        const{error}=await supabase.auth.signUp({email,password,options:{data:{nome:name,telefone:phone,condominio}}});
+        setMsg(error?error.message:'Cadastro enviado. Confira seu e-mail para confirmar a conta.');
+      }else if(mode==='forgot'){
+        const{error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
+        setMsg(error?error.message:'Se o e-mail estiver cadastrado, você receberá um link para criar uma nova senha.');
+      }else{
+        if(password.length<6){setMsg('A nova senha precisa ter pelo menos 6 caracteres.');return}
+        if(password!==confirmPassword){setMsg('As senhas não coincidem.');return}
+        const{error}=await supabase.auth.updateUser({password});
+        if(error){setMsg(error.message);return}
+        setMsg('Senha atualizada com sucesso.');
+        onPasswordUpdated?.();
+      }
+    }finally{
+      setBusy(false);
+    }
   }
-  function changeMode(next){setMode(next);setMsg('');setPassword('')}
+
+  function changeMode(next){
+    setMode(next);
+    setMsg('');
+    setPassword('');
+    setConfirmPassword('');
+  }
+
   return <main className="page"><section className="brand"><img className="brand-logo" src="/pem-condominios-logo.jpg" alt="PEM Condomínios - Gestão Condominial Inteligente"/></section><section className="card"><div className="intro"><span>GESTÃO CONDOMINIAL</span><h2>{title}</h2><p>{description}</p></div><form onSubmit={submit}>
     {mode==='signup'&&<><label>Nome completo<div className="field"><UserPlus size={18}/><input value={name} onChange={e=>setName(e.target.value)} placeholder="Seu nome" required/></div></label><label>Telefone<div className="field"><Phone size={18}/><input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="(81) 99999-9999" required/></div></label><label>Condomínio / empresa<div className="field"><Building2 size={18}/><input value={condominio} onChange={e=>setCondominio(e.target.value)} placeholder="Nome do condomínio ou administradora" required/></div></label></>}
-    <label>E-mail<div className="field"><Mail size={18}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" required/></div></label>
-    {mode!=='forgot'&&<label>Senha<div className="field"><Lock size={18}/><input type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" minLength={6} required/><button type="button" className="password-toggle" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ocultar senha':'Mostrar senha'}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></label>}
+    {mode!=='update'&&<label>E-mail<div className="field"><Mail size={18}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" required/></div></label>}
+    {mode!=='forgot'&&<label>{mode==='update'?'Nova senha':'Senha'}<div className="field"><Lock size={18}/><input type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" minLength={6} required/><button type="button" className="password-toggle" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ocultar senha':'Mostrar senha'}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></label>}
+    {mode==='update'&&<label>Confirmar nova senha<div className="field"><Lock size={18}/><input type={showPassword?'text':'password'} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="••••••••" minLength={6} required/></div></label>}
     {mode==='login'&&<button type="button" className="forgot-link" onClick={()=>changeMode('forgot')}><KeyRound size={15}/>Esqueci minha senha</button>}
-    <button type="submit" disabled={busy}>{busy?'Aguarde...':mode==='login'?'Entrar':mode==='signup'?'Criar conta':'Enviar recuperação'}<ArrowRight size={18}/></button>{msg&&<div className="msg">{msg}</div>}
-  </form><div className="auth-switch">{mode==='login'?<><span>Ainda não tem acesso?</span><button onClick={()=>changeMode('signup')}>Criar conta</button></>:<><span>{mode==='forgot'?'Lembrou sua senha?':'Já possui cadastro?'}</span><button onClick={()=>changeMode('login')}>Voltar para entrar</button></>}</div><small>PEM Condomínios · Gestão Condominial Inteligente</small></section></main>;
+    <button type="submit" disabled={busy}>{busy?'Aguarde...':mode==='login'?'Entrar':mode==='signup'?'Criar conta':mode==='forgot'?'Enviar recuperação':'Salvar nova senha'}<ArrowRight size={18}/></button>{msg&&<div className="msg">{msg}</div>}
+  </form>{mode!=='update'&&<div className="auth-switch">{mode==='login'?<><span>Ainda não tem acesso?</span><button onClick={()=>changeMode('signup')}>Criar conta</button></>:<><span>{mode==='forgot'?'Lembrou sua senha?':'Já possui cadastro?'}</span><button onClick={()=>changeMode('login')}>Voltar para entrar</button></>}</div>}<small>PEM Condomínios · Gestão Condominial Inteligente</small></section></main>;
 }
 
 function App(){
   const[session,setSession]=useState(null);
   const[loadingSession,setLoadingSession]=useState(true);
   const[busy,setBusy]=useState(false);
-  useEffect(()=>{if(!supabase){setLoadingSession(false);return}supabase.auth.getSession().then(({data})=>{setSession(data.session||null);setLoadingSession(false)});const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,nextSession)=>setSession(nextSession||null));return()=>subscription.unsubscribe()},[]);
-  async function logout(){if(!supabase)return;setBusy(true);await supabase.auth.signOut();setSession(null);setBusy(false)}
+  const[recovering,setRecovering]=useState(false);
+
+  useEffect(()=>{
+    if(!supabase){setLoadingSession(false);return}
+    const recoveryHint=window.location.hash.includes('type=recovery')||new URLSearchParams(window.location.search).get('type')==='recovery';
+    if(recoveryHint)setRecovering(true);
+    supabase.auth.getSession().then(({data})=>{
+      setSession(data.session||null);
+      setLoadingSession(false);
+    });
+    const{data:{subscription}}=supabase.auth.onAuthStateChange((event,nextSession)=>{
+      if(event==='PASSWORD_RECOVERY')setRecovering(true);
+      setSession(nextSession||null);
+    });
+    return()=>subscription.unsubscribe();
+  },[]);
+
+  async function logout(){
+    if(!supabase)return;
+    setBusy(true);
+    await supabase.auth.signOut();
+    setSession(null);
+    setBusy(false);
+  }
+
+  function finishPasswordRecovery(){
+    setRecovering(false);
+    window.history.replaceState({},'',window.location.pathname);
+  }
+
   if(loadingSession)return <main className="loading-page">Carregando...</main>;
+  if(recovering)return <AuthScreen forcePasswordReset onPasswordUpdated={finishPasswordRecovery}/>;
   return session?<Dashboard session={session} onLogout={logout} busy={busy}/>:<AuthScreen/>;
 }
 
