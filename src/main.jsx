@@ -110,7 +110,7 @@ function Dashboard({session,onLogout,busy}){
     <section className="workspace">
       <header className="topbar"><button className="menu-btn" onClick={()=>setMenuOpen(true)}><Menu size={22}/></button><div><span>ADMINISTRAÇÃO CONDOMINIAL</span><h1>{current?.label}</h1></div><div className="top-actions"><button className="refresh-btn" onClick={data.refresh} title="Atualizar"><RefreshCw size={18}/></button><div className="top-user"><div className="avatar">{userName.slice(0,1).toUpperCase()}</div><div><strong>{userName}</strong><span>Administrador</span></div></div></div></header>
       <div className="workspace-body">
-        {data.error&&<div className="system-error">{data.error}</div>}
+        {data.error&&<div className="system-error">{/jwt|token|expired|future/i.test(data.error)?'Sua sessão precisa ser renovada. Atualize a página; se continuar, saia e entre novamente.':'Não foi possível carregar alguns dados agora. Atualize a página e tente novamente.'}</div>}
         {active==='dashboard'?<>
           <section className="hero-panel"><div><span>PAINEL ADMINISTRATIVO</span><h2>Bem-vindo ao PEM Condomínios</h2><p>Cadastre o condomínio, organize unidades e moradores e mantenha reservas, cobranças, ocorrências e comunicação no mesmo lugar.</p></div><button onClick={()=>select('condominios')}><Plus size={18}/>Cadastrar condomínio</button></section>
           <section className="metric-grid">{cards.map(([title,value,caption,Icon,target])=><button className="metric-card" key={title} onClick={()=>select(target)}><div className="metric-icon"><Icon size={22}/></div><span>{title}</span><strong>{data.loading?'…':value}</strong><small>{caption}</small><ChevronRight size={18} className="metric-arrow"/></button>)}</section>
