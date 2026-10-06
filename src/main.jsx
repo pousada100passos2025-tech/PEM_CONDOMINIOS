@@ -377,8 +377,14 @@ function AuthScreen({forcePasswordReset=false,onPasswordUpdated}){
         const{error}=await supabase.auth.signInWithPassword({email,password});
         setMsg(error?'Não foi possível entrar. Verifique o e-mail e a senha.':'');
       }else if(mode==='signup'){
-        const{error}=await supabase.auth.signUp({email,password,options:{data:{nome:name,telefone:phone,condominio}}});
-        setMsg(error?error.message:'Cadastro enviado. Confira seu e-mail para confirmar a conta.');
+        const{data,error}=await supabase.auth.signUp({email,password,options:{data:{nome:name,telefone:phone,condominio}}});
+        if(error){
+          setMsg(error.message);
+        }else if(data?.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
+          setMsg('Este e-mail já possui cadastro. Use Entrar ou Esqueci minha senha.');
+        }else{
+          setMsg('Cadastro enviado. Confira seu e-mail para confirmar a conta.');
+        }
       }else if(mode==='forgot'){
         const{error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
         setMsg(error?error.message:'Se o e-mail estiver cadastrado, você receberá um link para criar uma nova senha.');
